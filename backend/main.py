@@ -10,7 +10,15 @@ from jobs import get_job_recommendations
 from session_store import create_session, get_session
 
 app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Allow M3 frontend to call this backend
 app.add_middleware(
     CORSMiddleware,
