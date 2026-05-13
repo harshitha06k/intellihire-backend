@@ -35,11 +35,13 @@ def decide_next_state(session: Session) -> str:
 
     return current
 
+
 def should_encourage(session: Session) -> bool:
     return (
         session.scores.confidence < 40 and
         session.scores.technical > 60
     )
+
 
 # ── Infer confidence from answer quality ────────────────────────────────────
 def infer_confidence_from_answer(answer: str, tech_score: float) -> float:
@@ -60,6 +62,7 @@ def infer_confidence_from_answer(answer: str, tech_score: float) -> float:
 
     return round(min(raw + 20, 100), 1)
 
+
 # ── Main turn ───────────────────────────────────────────────────────────────
 async def run_interview_turn(session: Session, answer: str) -> dict:
     print("RUN INTERVIEW TURN CALLED")
@@ -67,8 +70,9 @@ async def run_interview_turn(session: Session, answer: str) -> dict:
     # Pull latest M2 scores
     await sync_m2_scores(session.session_id)
 
-    # 1. Evaluate answer
+    # 1. Evaluate previous answer
     if session.question_history and answer.strip():
+
         last_q = session.question_history[-1]
 
         last_q.answer = answer
@@ -108,6 +112,7 @@ async def run_interview_turn(session: Session, answer: str) -> dict:
             )
 
         if session.scores.engagement < 5:
+
             depth_map = {
                 "surface": 40,
                 "intermediate": 65,
@@ -119,30 +124,24 @@ async def run_interview_turn(session: Session, answer: str) -> dict:
                 50
             )
 
-    # 2. Decide state
+    # 2. Decide next state
     prev_state = session.current_state
 
     new_state = decide_next_state(session)
 
     session.current_state = new_state
 
-    # 3. Prompt building
-    encourage_note = (
-        "IMPORTANT: The candidate seems nervous. "
-        "Ask the next question gently and encouragingly."
-        if should_encourage(session)
-        else ""
-    )
-
+    # 3. Build context
     history_text = "\n".join(
         f"Q: {q.question}\nA: {q.answer}"
         for q in session.question_history[-3:]
         if q.answer
-    ) or "No previous questions yet."
+    ) or "No previous conversation yet."
 
     skills_text = (
         ", ".join(session.resume_data.skills[:8])
-        or "general software engineering"
+        if session.resume_data.skills
+        else "software engineering"
     )
 
     role = (
@@ -151,24 +150,8 @@ async def run_interview_turn(session: Session, answer: str) -> dict:
         else "Software Engineer"
     )
 
-    state_guidance = {
-        "WARM_UP":
-            "Ask a warm, easy question. Be conversational.",
-
-        "CORE_SKILLS":
-            "Test core technical skills listed on their resume.",
-
-        "DEEP_DIVE":
-            "Go deeper on previous answers or projects.",
-
-        "STRESS_TEST":
-            "Ask difficult edge-case or system design questions.",
-
-        "WRAP_UP":
-            "Wrap up the interview politely."
-    }
-
-prompt = f"""
+    # 4. Adaptive AI prompt
+    prompt = f"""
 You are a senior technical interviewer conducting a real adaptive interview.
 
 Candidate target role:
@@ -219,10 +202,12 @@ Return ONLY the interview question.
 
     print(question_text)
 
+    # 5. Save question history
     session.question_history.append(
         QuestionEntry(question=question_text)
     )
 
+    # 6. Return frontend payload
     return {
         "question": question_text,
         "state": new_state,
