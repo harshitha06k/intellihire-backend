@@ -168,30 +168,37 @@ async def run_interview_turn(session: Session, answer: str) -> dict:
             "Wrap up the interview politely."
     }
 
-    prompt = f"""
-You are an expert technical interviewer conducting a real interview.
+prompt = f"""
+You are a senior technical interviewer conducting a real adaptive interview.
 
-Candidate role: {role}
-Candidate skills: {skills_text}
+Candidate target role:
+{role}
 
-Interview phase: {new_state}
-Guidance: {state_guidance.get(new_state, "")}
+Candidate skills:
+{skills_text}
 
-Current scores:
-Technical: {session.scores.technical:.0f}/100
-Confidence: {session.scores.confidence:.0f}/100
+Interview phase:
+{new_state}
 
-Recent conversation:
+Current interview scores:
+Technical: {session.scores.technical}/100
+Confidence: {session.scores.confidence}/100
+Engagement: {session.scores.engagement}/100
+
+Previous interview conversation:
 {history_text}
 
-{encourage_note}
+Instructions:
+- Ask ONLY ONE interview question
+- Make questions adaptive based on the candidate's previous answer
+- If the candidate mentions a technology/project, ask a follow-up question on it
+- Focus on technical depth
+- Avoid generic HR questions
+- Gradually increase difficulty
+- Ask realistic interview questions
+- Keep the question concise and natural
 
-Generate the NEXT interview question.
-
-Rules:
-- One question only
-- No explanations
-- Reference resume/projects when possible
+Return ONLY the interview question.
 """
 
     print("Generating AI question...")
