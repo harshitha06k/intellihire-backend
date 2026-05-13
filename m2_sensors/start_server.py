@@ -15,7 +15,7 @@ if __name__ == "__main__":
     print(f"   WebSocket Video: ws://localhost:{port}/ws/video\n")
 
     uvicorn.run(
-        "main:app",
+        "api.main:app",
         host=host,
         port=port,
         reload=False,
