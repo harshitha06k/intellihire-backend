@@ -39,7 +39,6 @@ session = SessionAggregator()
 async def lifespan(app: FastAPI):
     print("\n✅ M2 Sensors Server starting...")
     print("   Audio: Whisper STT + Librosa")
-    print("   Video: MediaPipe Face Mesh + Pose + DeepFace")
     print("   WebSocket endpoints: /ws/audio  /ws/video")
     yield
     print("\n🛑 M2 Sensors Server shutting down")
